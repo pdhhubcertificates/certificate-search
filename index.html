@@ -6,7 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
     body { font-family: Arial, sans-serif; max-width: 720px; margin: 40px auto; color: #222; background:#fff; }
-    h1 { margin-bottom: 8px; color:#006400; } /* dark green */
+    h1 { margin-bottom: 8px; color:#006400; }
     .sub { color:#444; margin-top:0; }
     form { margin: 16px 0 24px; }
     input { width: 100%; padding: 10px; font-size: 16px; margin-bottom: 12px; border:1px solid #006400; border-radius:6px; }
@@ -19,13 +19,14 @@
     .link { color:#006400; text-decoration:none; }
     .link:hover { text-decoration:underline; }
   </style>
-  <script src="https://apis.google.com/js/api.js"></script>
+  <!-- Load Google API client -->
+  <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()"></script>
 </head>
 <body>
   <h1>Get My Certificates</h1>
   <p class="sub">Sign in with Google, then enter your email or license number.</p>
 
-  <button onclick="signIn()">Sign in with Google</button>
+  <button id="signinBtn" onclick="signIn()" disabled>Sign in with Google</button>
 
   <form id="searchForm" style="display:none;">
     <input id="query" type="text" placeholder="e.g. jane.doe@example.com or 80060045UAE" required />
@@ -35,18 +36,25 @@
   <div id="output"></div>
 
   <script>
-    const CLIENT_ID = "727272660788-9elavgrbn9vp5frh3j55ggi8b4tg01l8.apps.googleusercontent.com"; // your OAuth client ID
-    const SHEET_ID = "1zFmBLSXnOlvd-iWh9Z7Zu79_XI7p80gu-0oPllh7r7Y"; // your sheet
+    const CLIENT_ID = "727272660788-9elavgrbn9vp5frh3j55ggi8b4tg01l8.apps.googleusercontent.com";
+    const SHEET_ID = "1zFmBLSXnOlvd-iWh9Z7Zu79_XI7p80gu-0oPllh7r7Y";
     const RANGE = "Sheet1!A1:H";
 
+    // Called when gapi.js loads
+    function gapiLoaded() {
+      gapi.load("client:auth2", initAuth);
+    }
+
+    function initAuth() {
+      gapi.auth2.init({ client_id: CLIENT_ID }).then(() => {
+        document.getElementById("signinBtn").disabled = false;
+      });
+    }
+
     function signIn() {
-      gapi.load("client:auth2", () => {
-        gapi.auth2.init({ client_id: CLIENT_ID }).then(() => {
-          gapi.auth2.getAuthInstance().signIn().then(user => {
-            document.getElementById("searchForm").style.display = "block";
-            initClient();
-          });
-        });
+      gapi.auth2.getAuthInstance().signIn().then(user => {
+        document.getElementById("searchForm").style.display = "block";
+        initClient();
       });
     }
 
