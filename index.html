@@ -69,6 +69,8 @@
       margin-top: 12px;
       background: #f9fff9;
       animation: fadeIn 0.3s ease-in;
+      max-height: 400px;       /* prevent overflow */
+      overflow-y: auto;        /* scroll if too many items */
     }
     .cert-list {
       list-style: none;
@@ -135,6 +137,15 @@
         .replace(/"/g, "&quot;");
     }
 
+    // Convert Google Drive "view" links into direct download links
+    function makeDownloadLink(link) {
+      const match = link.match(/\/d\/([^/]+)\//);
+      if (match) {
+        return `https://drive.google.com/uc?export=download&id=${match[1]}`;
+      }
+      return link;
+    }
+
     async function fetchSheet() {
       const res = await fetch(ENDPOINT);
       if (!res.ok) throw new Error("Failed to fetch sheet");
@@ -167,8 +178,8 @@
       const list = matches.map(r => {
         const course = escapeHtml(r[courseCol] || "");
         const date = escapeHtml(r[dateCol] || "");
-        const link = r[linkCol] || "#";
-        return `<li><span>${course} (${date})</span><a class="link" href="${link}" target="_blank">Download</a></li>`;
+        const link = makeDownloadLink(r[linkCol] || "#");
+        return `<li><span>${course} (${date})</span><a class="link" href="${link}" target="_blank">Download PDF</a></li>`;
       }).join("");
 
       output.innerHTML = `
