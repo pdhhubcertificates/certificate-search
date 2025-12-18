@@ -62,6 +62,21 @@
     button:hover {
       background: #008000;
     }
+    .btn-link {
+  background: #006400;
+  color: #fff;
+  padding: 12px 20px;
+  font-size: 16px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-weight: 500;
+  display: inline-block;
+  transition: background 0.2s;
+}
+.btn-link:hover {
+  background: #008000;
+}
+
     .result {
       border: 1px solid #006400;
       border-radius: 8px;
@@ -118,11 +133,12 @@
     <form id="searchForm">
       <input id="query" type="text" placeholder="e.g. jane.doe@example.com or 80060045UAE" required />
       <button type="submit">Search</button>
+      <a href="https://www.pdhhub.com/library" class="btn-link">Library</a>
     </form>
 
     <div id="output"></div>
   </div>
-<a class="link" href="https://www.pdhhub.com/library" target="_blank" download>Back To Library</a></li>
+
   <script>
     const SHEET_ID = "1zFmBLSXnOlvd-iWh9Z7Zu79_XI7p80gu-0oPllh7r7Y";
     const API_KEY = "AIzaSyCWjmOhU1G4IgKF8ietSxkq0bfhBUqlmjo";
