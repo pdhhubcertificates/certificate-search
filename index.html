@@ -69,8 +69,8 @@
       margin-top: 12px;
       background: #f9fff9;
       animation: fadeIn 0.3s ease-in;
-      max-height: 400px;       /* prevent overflow */
-      overflow-y: auto;        /* scroll if too many items */
+      max-height: 400px;
+      overflow-y: auto;
     }
     .cert-list {
       list-style: none;
@@ -93,12 +93,16 @@
       font-weight: bold;
     }
     .link {
-      color: #006400;
+      background: #006400;
+      color: #fff;
+      padding: 6px 12px;
+      border-radius: 6px;
       text-decoration: none;
       font-weight: 500;
+      transition: background 0.2s;
     }
     .link:hover {
-      text-decoration: underline;
+      background: #008000;
     }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
@@ -137,15 +141,6 @@
         .replace(/"/g, "&quot;");
     }
 
-    // Convert Google Drive "view" links into direct download links
-    function makeDownloadLink(link) {
-      const match = link.match(/\/d\/([^/]+)\//);
-      if (match) {
-        return `https://drive.google.com/uc?export=download&id=${match[1]}`;
-      }
-      return link;
-    }
-
     async function fetchSheet() {
       const res = await fetch(ENDPOINT);
       if (!res.ok) throw new Error("Failed to fetch sheet");
@@ -159,10 +154,7 @@
       const emailCol = headers.indexOf("email");
       const licenseCol = headers.indexOf("license_number");
       const courseCol = headers.indexOf("course_name");
-      const dateCol = headers.indexOf("completion_date");
-      const linkCol = headers.indexOf("drive_link");
-      const firstCol = headers.indexOf("first_name");
-      const lastCol = headers.indexOf("last_name");
+      const linkCol = headers.indexOf("drive_links"); // use drive_links column
 
       const matches = rows.slice(1).filter(r => {
         const email = (r[emailCol] || "").toLowerCase().trim();
@@ -177,14 +169,12 @@
 
       const list = matches.map(r => {
         const course = escapeHtml(r[courseCol] || "");
-        const date = escapeHtml(r[dateCol] || "");
-        const link = makeDownloadLink(r[linkCol] || "#");
-        return `<li><span>${course} (${date})</span><a class="link" href="${link}" target="_blank">Download PDF</a></li>`;
+        const link = r[linkCol] || "#";
+        return `<li><span>${course}</span><a class="link" href="${link}" target="_blank" download>Download PDF</a></li>`;
       }).join("");
 
       output.innerHTML = `
         <div class="result">
-          <p><strong>${escapeHtml(matches[0][firstCol])} ${escapeHtml(matches[0][lastCol])}</strong></p>
           <ul class="cert-list">${list}</ul>
         </div>
       `;
