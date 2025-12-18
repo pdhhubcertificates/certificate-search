@@ -5,26 +5,29 @@
   <title>PDHhub Certificates</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body { font-family: Arial, sans-serif; max-width: 720px; margin: 40px auto; color: #222; }
-    h1 { margin-bottom: 8px; }
-    .sub { color:#666; margin-top:0; }
+    body { font-family: Arial, sans-serif; max-width: 720px; margin: 40px auto; color: #222; background:#fff; }
+    h1 { margin-bottom: 8px; color:#006400; } /* dark green */
+    .sub { color:#444; margin-top:0; }
     form { margin: 16px 0 24px; }
-    input { width: 100%; padding: 10px; font-size: 16px; margin-bottom: 12px; }
-    button { background:#2d6cdf; color:#fff; border:none; padding:10px 16px; font-size:16px; border-radius:6px; cursor:pointer; }
-    button:hover { background:#1f57c3; }
-    .result { border:1px solid #ddd; border-radius:8px; padding:16px; margin-top:12px; }
+    input { width: 100%; padding: 10px; font-size: 16px; margin-bottom: 12px; border:1px solid #006400; border-radius:6px; }
+    button { background:#006400; color:#fff; border:none; padding:10px 16px; font-size:16px; border-radius:6px; cursor:pointer; }
+    button:hover { background:#008000; }
+    .result { border:1px solid #006400; border-radius:8px; padding:16px; margin-top:12px; background:#f9fff9; }
     .cert-list { list-style:none; padding-left:0; }
-    .cert-list li { display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed #eee; padding:8px 0; }
+    .cert-list li { display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed #ccc; padding:8px 0; }
     .empty { color:#a33; }
-    .link { color:#2d6cdf; text-decoration:none; }
+    .link { color:#006400; text-decoration:none; }
     .link:hover { text-decoration:underline; }
   </style>
+  <script src="https://apis.google.com/js/api.js"></script>
 </head>
 <body>
   <h1>Get My Certificates</h1>
-  <p class="sub">Enter your email or license number to find your certificates.</p>
+  <p class="sub">Sign in with Google, then enter your email or license number.</p>
 
-  <form id="searchForm">
+  <button onclick="signIn()">Sign in with Google</button>
+
+  <form id="searchForm" style="display:none;">
     <input id="query" type="text" placeholder="e.g. jane.doe@example.com or 80060045UAE" required />
     <button type="submit">Search</button>
   </form>
@@ -32,15 +35,34 @@
   <div id="output"></div>
 
   <script>
+    const CLIENT_ID = "727272660788-9elavgrbn9vp5frh3j55ggi8b4tg01l8.apps.googleusercontent.com"; // your OAuth client ID
     const SHEET_ID = "1zFmBLSXnOlvd-iWh9Z7Zu79_XI7p80gu-0oPllh7r7Y"; // your sheet
-    const API_KEY = "YOUR_API_KEY"; // from Google Cloud
-    const RANGE = "Sheet1!A1:H"; // adjust if needed
+    const RANGE = "Sheet1!A1:H";
 
-    const ENDPOINT = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
+    function signIn() {
+      gapi.load("client:auth2", () => {
+        gapi.auth2.init({ client_id: CLIENT_ID }).then(() => {
+          gapi.auth2.getAuthInstance().signIn().then(user => {
+            document.getElementById("searchForm").style.display = "block";
+            initClient();
+          });
+        });
+      });
+    }
 
-    const form = document.getElementById("searchForm");
-    const input = document.getElementById("query");
-    const output = document.getElementById("output");
+    function initClient() {
+      gapi.client.init({
+        discoveryDocs: ["https://sheets.googleapis.com/$discovery/rest?version=v4"]
+      });
+    }
+
+    async function fetchSheet() {
+      const response = await gapi.client.sheets.spreadsheets.values.get({
+        spreadsheetId: SHEET_ID,
+        range: RANGE
+      });
+      return response.result.values || [];
+    }
 
     function escapeHtml(str) {
       return String(str || "")
@@ -48,12 +70,6 @@
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;");
-    }
-
-    async function fetchSheet() {
-      const res = await fetch(ENDPOINT);
-      const json = await res.json();
-      return json.values || [];
     }
 
     function renderResults(rows, q) {
@@ -92,6 +108,10 @@
         </div>
       `;
     }
+
+    const form = document.getElementById("searchForm");
+    const input = document.getElementById("query");
+    const output = document.getElementById("output");
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
