@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>PDHhub Certificates</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 720px; margin: 40px auto; color: #222; }
+    h1 { margin-bottom: 8px; }
+    .sub { color:#666; margin-top:0; }
+    form { margin: 16px 0 24px; }
+    input { width: 100%; padding: 10px; font-size: 16px; margin-bottom: 12px; }
+    button { background:#2d6cdf; color:#fff; border:none; padding:10px 16px; font-size:16px; border-radius:6px; cursor:pointer; }
+    button:hover { background:#1f57c3; }
+    .result { border:1px solid #ddd; border-radius:8px; padding:16px; margin-top:12px; }
+    .cert-list { list-style:none; padding-left:0; }
+    .cert-list li { display:flex; justify-content:space-between; align-items:center; border-bottom:1px dashed #eee; padding:8px 0; }
+    .empty { color:#a33; }
+    .link { color:#2d6cdf; text-decoration:none; }
+    .link:hover { text-decoration:underline; }
+  </style>
+</head>
+<body>
+  <h1>Get My Certificates</h1>
+  <p class="sub">Enter your email or license number to find your certificates.</p>
+
+  <form id="searchForm">
+    <input id="query" type="text" placeholder="e.g. jane.doe@example.com or 80060045UAE" required />
+    <button type="submit">Search</button>
+  </form>
+
+  <div id="output"></div>
+
+  <script>
+    const SHEET_ID = "1zFmBLSXnOlvd-iWh9Z7Zu79_XI7p80gu-0oPllh7r7Y"; // your sheet
+    const API_KEY = "YOUR_API_KEY"; // from Google Cloud
+    const RANGE = "Sheet1!A1:H"; // adjust if needed
+
+    const ENDPOINT = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
+
+    const form = document.getElementById("searchForm");
+    const input = document.getElementById("query");
+    const output = document.getElementById("output");
+
+    function escapeHtml(str) {
+      return String(str || "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    async function fetchSheet() {
+      const res = await fetch(ENDPOINT);
+      const json = await res.json();
+      return json.values || [];
+    }
+
+    function renderResults(rows, q) {
+      const query = q.trim().toLowerCase();
+      const headers = rows[0].map(h => h.toLowerCase().trim());
+      const emailCol = headers.indexOf("email");
+      const licenseCol = headers.indexOf("license_number");
+      const courseCol = headers.indexOf("course_name");
+      const dateCol = headers.indexOf("completion_date");
+      const linkCol = headers.indexOf("drive_link");
+      const firstCol = headers.indexOf("first_name");
+      const lastCol = headers.indexOf("last_name");
+
+      const matches = rows.slice(1).filter(r => {
+        const email = (r[emailCol] || "").toLowerCase().trim();
+        const license = (r[licenseCol] || "").toLowerCase().trim();
+        return email === query || license === query;
+      });
+
+      if (matches.length === 0) {
+        output.innerHTML = `<p class="empty">No certificates found for ${escapeHtml(q)}</p>`;
+        return;
+      }
+
+      const list = matches.map(r => {
+        const course = escapeHtml(r[courseCol] || "");
+        const date = escapeHtml(r[dateCol] || "");
+        const link = r[linkCol] || "#";
+        return `<li><span>${course} (${date})</span><a class="link" href="${link}" target="_blank">Download</a></li>`;
+      }).join("");
+
+      output.innerHTML = `
+        <div class="result">
+          <p><strong>${matches[0][firstCol]} ${matches[0][lastCol]}</strong></p>
+          <ul class="cert-list">${list}</ul>
+        </div>
+      `;
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      output.textContent = "Searching…";
+      try {
+        const rows = await fetchSheet();
+        renderResults(rows, input.value);
+      } catch (err) {
+        console.error(err);
+        output.innerHTML = `<p class="empty">Unable to load data.</p>`;
+      }
+    });
+  </script>
+</body>
+</html>
