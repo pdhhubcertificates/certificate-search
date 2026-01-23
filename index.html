@@ -7,23 +7,24 @@
   <style>
     body {
       font-family: "Segoe UI", Arial, sans-serif;
-      background: #f5fff5;
+      background: linear-gradient(135deg, #f5fff5, #e8fbe8);
       margin: 0;
       padding: 0;
       color: #222;
     }
     .container {
-      max-width: 720px;
+      max-width: 760px;
       margin: 60px auto;
       background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      padding: 32px;
+      border-radius: 16px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+      padding: 40px;
+      animation: fadeIn 0.6s ease-in;
     }
     h1 {
       margin: 0 0 8px;
       color: #006400;
-      font-size: 28px;
+      font-size: 32px;
       text-align: center;
     }
     .sub {
@@ -42,12 +43,12 @@
       font-size: 16px;
       border: 1px solid #006400;
       border-radius: 6px;
-      transition: border-color 0.2s;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
     input:focus {
       outline: none;
       border-color: #008000;
-      box-shadow: 0 0 4px rgba(0,128,0,0.3);
+      box-shadow: 0 0 6px rgba(0,128,0,0.4);
     }
     button {
       background: #006400;
@@ -57,34 +58,34 @@
       font-size: 16px;
       border-radius: 6px;
       cursor: pointer;
-      transition: background 0.2s;
+      transition: background 0.2s, transform 0.2s;
     }
     button:hover {
       background: #008000;
+      transform: scale(1.05);
     }
     .btn-link {
-  background: #006400;
-  color: #fff;
-  padding: 12px 20px;
-  font-size: 16px;
-  border-radius: 6px;
-  text-decoration: none;
-  font-weight: 500;
-      margin-left:50%;
-  display: inline-block;
-  transition: background 0.2s;
-}
-.btn-link:hover {
-  background: #008000;
-}
-
+      background: #006400;
+      color: #fff;
+      padding: 12px 20px;
+      font-size: 16px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 500;
+      margin-left: auto;
+      transition: background 0.2s, transform 0.2s;
+    }
+    .btn-link:hover {
+      background: #008000;
+      transform: scale(1.05);
+    }
     .result {
       border: 1px solid #006400;
       border-radius: 8px;
       padding: 16px;
       margin-top: 12px;
       background: #f9fff9;
-      animation: fadeIn 0.3s ease-in;
+      animation: fadeIn 0.4s ease-in;
       max-height: 400px;
       overflow-y: auto;
     }
@@ -98,7 +99,7 @@
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px dashed #ccc;
-      padding: 8px 0;
+      padding: 10px 0;
     }
     .cert-list li:last-child {
       border-bottom: none;
@@ -115,10 +116,11 @@
       border-radius: 6px;
       text-decoration: none;
       font-weight: 500;
-      transition: background 0.2s;
+      transition: background 0.2s, transform 0.2s;
     }
     .link:hover {
       background: #008000;
+      transform: scale(1.05);
     }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
@@ -143,7 +145,7 @@
   <script>
     const SHEET_ID = "1zFmBLSXnOlvd-iWh9Z7Zu79_XI7p80gu-0oPllh7r7Y";
     const API_KEY = "AIzaSyCWjmOhU1G4IgKF8ietSxkq0bfhBUqlmjo";
-    const RANGE = "Sheet1!A1:H";
+    const RANGE = "Sheet1!A1:J"; // updated to cover all columns
     const ENDPOINT = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
 
     const form = document.getElementById("searchForm");
@@ -168,13 +170,18 @@
     function renderResults(rows, q) {
       const query = q.trim().toLowerCase();
       const headers = rows[0].map(h => h.toLowerCase().trim());
-      const emailCol = headers.indexOf("email");
-      const licenseCol = headers.indexOf("license_number");
-      const courseCol = headers.indexOf("course_name");
-      const linkCol = headers.indexOf("drive_links"); // use drive_links column
+
+      const emailCol   = headers.indexOf("email");
+      const licenseCol = headers.indexOf("license");
+      const courseCol  = headers.indexOf("course");
+      const linkCol    = headers.indexOf("pdf link");
+      const nameCol    = headers.indexOf("full name");
+      const hoursCol   = headers.indexOf("hours");
+      const dateCol    = headers.indexOf("date");
+      const statusCol  = headers.indexOf("status");
 
       const matches = rows.slice(1).filter(r => {
-        const email = (r[emailCol] || "").toLowerCase().trim();
+        const email   = (r[emailCol] || "").toLowerCase().trim();
         const license = (r[licenseCol] || "").toLowerCase().trim();
         return email === query || license === query;
       });
@@ -185,9 +192,22 @@
       }
 
       const list = matches.map(r => {
+        const name   = escapeHtml(r[nameCol] || "");
         const course = escapeHtml(r[courseCol] || "");
-        const link = r[linkCol] || "#";
-        return `<li><span>${course}</span><a class="link" href="${link}" target="_blank" download>Download PDF</a></li>`;
+        const hours  = escapeHtml(r[hoursCol] || "");
+        const date   = escapeHtml(r[dateCol] || "");
+        const status = escapeHtml(r[statusCol] || "");
+        const link   = r[linkCol] || "#";
+
+        return `
+          <li>
+            <div>
+              <strong>${course}</strong><br/>
+              <small>${name} • ${hours} hrs • ${date} • ${status}</small>
+            </div>
+            <a class="link" href="${link}" target="_blank" download>Download PDF</a>
+          </li>
+        `;
       }).join("");
 
       output.innerHTML = `
@@ -209,6 +229,5 @@
       }
     });
   </script>
-  
 </body>
 </html>
